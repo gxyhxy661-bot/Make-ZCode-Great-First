@@ -1,4 +1,5 @@
-# ZCode
+# Make ZCode Great First
+## 让ZCode第一次伟大
 
 <div align="center">
   <img src="public/logo/icons/1024x1024.png" alt="ZCode" width="128" height="128" />
