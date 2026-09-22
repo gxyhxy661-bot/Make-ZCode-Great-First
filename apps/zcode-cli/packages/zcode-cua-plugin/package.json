@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json.schemastore.org/package.json",
+  "name": "@zcode/zcode-cua-plugin",
+  "version": "0.6.3",
+  "private": true,
+  "description": "ZCode CUA plugin wrapper; its version tracks the upstream zcode-cua MCP server version.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/mcp/server.js",
+  "dependencies": {
+    "@zcode/zcode-cua": "workspace:*",
+    "sharp": "0.34.5"
+  }
+}

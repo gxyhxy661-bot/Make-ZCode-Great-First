@@ -1,0 +1,8 @@
+{
+  "$schema": "https://json.schemastore.org/package.json",
+  "name": "@zcode/presentations-plugin",
+  "version": "0.1.7",
+  "private": true,
+  "license": "SEE LICENSE IN skills/",
+  "description": "Built-in presentations skills published as an official ZCode plugin（创建、编辑与审阅演示文档（PPTX）。）."
+}

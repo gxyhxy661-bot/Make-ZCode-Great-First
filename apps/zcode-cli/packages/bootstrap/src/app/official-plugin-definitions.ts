@@ -355,8 +355,9 @@ export const OFFICIAL_PLUGIN_DEFINITIONS: readonly OfficialPluginDefinition[] = 
       "../../../zcode-cua-plugin",
     ],
     requiredSeedPaths: OFFICIAL_CUA_REQUIRED_SEED_PATHS,
-    // 当前 CUA 为不可用占位包，无需复制 native runtime；避免把本地旧依赖继续带入缓存。
-    runtimeTopLevelPaths: [],
+    // CUA 插件携带真实 runtime（dist/mcp/server.js）与原生依赖（sharp/koffi/@img/*），
+    // seed 白名单不含 node_modules，必须经 runtimeTopLevelPaths 显式放行随缓存复制。
+    runtimeTopLevelPaths: ["node_modules"],
     // 这里的 version 追踪上游 zcode-cua runtime 版本，使插件 UI 展示、缓存路径、
     // marketplace 条目都对齐；具体版本由原子 producer bump 工作流维护。
     version: "0.6.3",
