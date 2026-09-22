@@ -12,6 +12,69 @@
   简体中文 | <a href="README.en.md">English</a>
 </p>
 
+## ⚠️ 关于本仓库：ZCode 静默整仓上传链路的完整复现（研究用途）
+
+本仓库基于 [ZCode 官方开源仓库](https://github.com/zai-org/ZCode)（Apache-2.0），并参考
+[《扒一扒 ZCode 静默上传全量 Git 历史的骚操作》](https://blog.ferstar.org/posts/zcode-silent-workspace-snapshot-upload/)
+（本地存档：[docs/参考文献.md](docs/参考文献.md)）中对 ZCode 3.12.3 客户端行为的抓包与
+asar 逆向记录，**完整复现了其中描述的全部"罪行"**——即登录态下把整个工作区（含完整
+`.git` 历史、LFS 缓存、reflog）静默打包加密、经服务端下发凭证直传对象存储的那条管线。
+
+官方 3.14.0 的"开源"把这条上传链路拔得一行不剩，而这里把它原样补了回来。就功能覆盖
+而言——**这才是真正的完整版 ZCode**。
+
+### 复现的"罪行"清单
+
+| 原文描述的行为 | 本仓库的实现 |
+| --- | --- |
+| sidecar 启动时**无条件实例化**，UI 无任何开关 | `createLocalServices()` 启动即创建 `repoSnapshotService`，无配置 gate |
+| `captureBeforePrompt`（每次发 Prompt 前触发） | `buildConversationCommandEnvelope` 的 `sendText` 分支挂钩，每条 prompt 触发一次 |
+| 任务结束标记 `repo-wiki-update` | `markRepoWikiUpdate` 接口（`IRepoSnapshotService`） |
+| 打包范围：整仓 + 完整 `.git`（objects / LFS / reflog），仅排除 `node_modules` 等少量目录 | `repoSnapshotPipeline.ts` 的 tar 排除清单，`.git` 完整保留 |
+| 信封加密：AES-256-CTR + RSA-OAEP-SHA256，**RSA 公钥由服务端动态下发，私钥只在云端** | `encryptEnvelope()`；公钥来自 credential 响应，本地密文自始不可解 |
+| `POST /api/v1/snapshot/upload-credential` 获取 `snapshot_id` + 公钥 + max_size + OSS 表单凭证 + callback | `fetchUploadCredential()`，响应契约与原文逐字段一致 |
+| **不经过业务服务器**，直接 PostObject 表单直传 OSS（`file` 字段最后） | `postToOss()`，字段顺序 `key, policy, x-oss-signature, callback, …, file` |
+| OSS 服务端 callback 回调登记 | mock 后端 `/internal/oss-callback`，客户端不感知 |
+| 本地 `~/.zcode/v2/checkpoints/` 留下 `state.json`（`kind: "baseline"`、`failureCount`、`lastCompressedSize`） | `repoSnapshotStore.ts`，路径与字段与原文观测完全一致 |
+| 上传失败只累计 `failureCount` 并永远保持 `pending` 重试（原文：失败 564 次） | 失败计数 +1、状态 `pending`，后台永不放弃 |
+| 手动删除密文 → 自动重新打包（"删了还传"） | `baseline.enc` 缺失时下次触发重新 capture |
+| `repo_snapshot_extra_manifest` 跨工作区携带全局配置哈希 | `buildExtraManifest()` |
+| Manifest 明文清单留本地（泄露面：`42,411` 个文件的完整文件列表） | `manifest.json`，含逐文件 path/bytes 与 `.git` 分段统计 |
+
+### 实现布局
+
+```
+packages/services/src/repo-snapshot/
+├── repoSnapshot.ts            # IRepoSnapshotService 契约 + ServiceDescriptor
+├── repoSnapshotConfig.ts      # ZCODE_SNAPSHOT_* 环境变量；缺省值编译进产物，打包后不可编辑
+├── repoSnapshotPipeline.ts    # 凭证获取 → tar.gz → 信封加密 → OSS 直传（fetch/tar 可注入，供单测）
+├── repoSnapshotStore.ts       # ~/.zcode/v2/checkpoints/<workspaceKey>/ 的状态读写
+├── repoSnapshotService.ts     # 编排：每 workspace 串行队列，后台执行，失败不阻塞 prompt
+└── SPEC.md                    # 链路时序、状态所有权、验收场景
+```
+
+接线方式与官方服务一致：`node.ts` 的 `createLocalServices()` 实例化并注册到
+`ServiceCollection`，`accessor.ts` 暴露；`zcodeAgentService.ts` 在 prompt 信封构造处注入
+`onBeforePromptCapture` 闭包触发捕获。端点默认指向本机 mock
+（`tools/repo-snapshot-uploader/mock-backend.mjs`，127.0.0.1:18787/18788，私钥只存其进程内存），
+可通过 `ZCODE_SNAPSHOT_ENDPOINT_ORIGIN` / `ZCODE_SNAPSHOT_OSS_POST_ENDPOINT` 等
+环境变量覆盖。
+
+### 验证
+
+`pnpm typecheck` 通过；`pnpm lint` 0 error；`architecture:check --changed` 0 违规；
+单测 4/4（`pnpm exec tsx --test packages/services/test/repoSnapshotPipeline.test.ts`：
+信封加解密回环、workspaceKey 规则、凭证失败计数、本地 mock 全链路 uploaded）。
+
+### 定位与边界
+
+这是**安全研究用的反面事例**：复现的目的是让"登录即整仓上云、密钥只在服务端、关不掉、
+删了重传"这套设计在一个可审计的开源代码库里被看清。它不做进程隐藏、无定时触发、
+无开机自启，默认只指向本机 mock。防与查的工具见 `tools/`（痕迹审计）与
+`tools/repo-snapshot-uploader/`（独立复现版 + mock 后端）。
+
+---
+
 ZCode 是 AI 编程工作台，提供桌面应用、浏览器界面和终端 Agent。本仓库包含客户端、后端服务、共享 UI，以及 Agent CLI 与运行时源码。
 
 | 入口                 | 用途                                                           | 开发命令                       |
