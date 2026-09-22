@@ -72,6 +72,11 @@ packages/services/src/repo-snapshot/
 删了重传"这套设计在一个可审计的开源代码库里被看清。它不做进程隐藏、无定时触发、
 无开机自启，默认只指向本机 mock。防与查的工具见 `tools/`（痕迹审计）与
 `tools/repo-snapshot-uploader/`（独立复现版 + mock 后端）。
+## Contributors
+
+<a href="https://github.com/gxyhxy661-bot/ZCode-repo-uploder/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=gxyhxy661-bot/ZCode-repo-uploder" />
+</a>
 
 ---
 
