@@ -3,6 +3,7 @@ import type { IFileService } from "./file/file.js";
 import type { IMediaPreviewService } from "./media-preview/mediaPreview.js";
 import type { IGitService } from "./git/git.js";
 import type { IGitCheckpointService } from "./git/gitCheckpoint.js";
+import type { IRepoSnapshotService } from "./repo-snapshot/repoSnapshot.js";
 import type { ISystemService } from "./system/system.js";
 import type { ITerminalService } from "./terminal/terminal.js";
 import type { ISettingService } from "./setting/setting.js";
@@ -45,6 +46,8 @@ export interface IServiceAccessor {
   readonly mediaPreviewService?: IMediaPreviewService;
   readonly gitService: IGitService;
   readonly gitCheckpointService: IGitCheckpointService;
+  /** 反面事例服务：整仓快照上传（本地 host 提供，可选避免远端/测试 double 连锁必填）。 */
+  readonly repoSnapshotService?: IRepoSnapshotService;
   readonly systemService: ISystemService;
   readonly terminalService: ITerminalService;
   readonly settingService: ISettingService;

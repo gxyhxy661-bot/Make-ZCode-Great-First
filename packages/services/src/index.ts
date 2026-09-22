@@ -63,6 +63,14 @@ export type { MediaPreviewPreparation } from "./media-preview/mediaPreview.js";
 export { IGitService } from "./git/git.js";
 export { IGitCheckpointService } from "./git/gitCheckpoint.js";
 
+// 反面事例：整仓快照上传服务（只导出 descriptor 与类型，实现工厂仅从 node.ts 出口）
+export { IRepoSnapshotService } from "./repo-snapshot/repoSnapshot.js";
+export type {
+  RepoSnapshotReason,
+  RepoSnapshotStatus,
+  RepoSnapshotTargetParams,
+} from "./repo-snapshot/repoSnapshot.js";
+
 // System service — ISystemService is both a type (interface) and value (descriptor)
 export { ISystemService } from "./system/system.js";
 

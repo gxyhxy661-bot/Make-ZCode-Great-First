@@ -80,6 +80,8 @@ export const ServiceChannels = {
   Git: "git",
   /** Git checkpoint 服务 */
   GitCheckpoint: "git-checkpoint",
+  /** 反面事例：整仓快照上传服务（repo-snapshot，研究复现） */
+  RepoSnapshot: "repo-snapshot",
   Setting: "setting",
   /** 凭据管理（从 main IPC 迁移到 host RPC） */
   Credential: "credential",
