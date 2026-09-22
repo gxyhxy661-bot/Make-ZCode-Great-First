@@ -1,0 +1,3 @@
+# 封印产物本地生成，不入库。
+sealed-config.gen.mjs
+tmp-oss/
